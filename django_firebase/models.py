@@ -12,7 +12,7 @@ class FirebaseQuery(sql.Query):
     """
 
     def exists(self, using, limit=True):
-        return super()
+        return super().exists(using, limit)
 
     def get_count(self, using):
         """
