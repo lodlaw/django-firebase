@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import sql, ForeignKey
 from django.forms.models import model_to_dict
+from django.utils import timezone
 from firebase_admin import firestore
 
 
@@ -9,6 +10,9 @@ class FirebaseQuery(sql.Query):
     """
     Overrides the default SQL query behaviour with Firebase
     """
+
+    def exists(self, using, limit=True):
+        return super()
 
     def get_count(self, using):
         """
@@ -36,20 +40,34 @@ class FirebaseQuerySet(models.QuerySet):
 
         return c
 
-    def get(self, uid, *args, **kwargs):
+    def get(self, id=None, *args, **kwargs):
         """
         Gets a Firebase instance
-        :param uid: the id of that firebase instance
+        :param id: the id of that firebase instance
         :return: the instance itself
         :rtype FirebaseModel
         """
         self._fetch_all()
 
+        if id:
+            kwargs['id'] = id
+
         for i in self._result_cache:
-            if i.id == uid:
+            i_dict = i.__dict__
+            found = True
+
+            for key, value in kwargs.items():
+                try:
+                    if not i_dict[key] == value:
+                        found = False
+                except KeyError:
+                    if not i_dict[key + "_id"] == value:
+                        found = False
+
+            if found:
                 return i
 
-        raise self.model.DoesNotExist()
+        raise self.model.DoesNotExist("Object does not exist")
 
     def _fetch_all(self):
         """
@@ -104,6 +122,10 @@ class FirebaseModel(models.Model):
     # an id is compulsory here for Firebase
     id = models.CharField(max_length=50, primary_key=True, editable=False)
 
+    # timestamp fields for firebase
+    created = models.DateTimeField(blank=False, default=timezone.now)
+    modified = models.DateTimeField(blank=False, default=timezone.now)
+
     def __init__(self, *args, **kwargs):
         super(FirebaseModel, self).__init__(*args, **kwargs)
 
@@ -117,9 +139,8 @@ class FirebaseModel(models.Model):
         """
         Cleans Firebase fields
         The steps are:
-        - Remove all foreign key fields
+        - Remove all foreign key fields (the developer is responsible for cleaning them)
         - Calling super to get the default clean_fields without the foreign key fields
-        - Add back the foreign key fields
         """
         exclude = []
         for f in self._meta.fields:
@@ -128,10 +149,31 @@ class FirebaseModel(models.Model):
 
         super().clean_fields(exclude=exclude)
 
-        for f in self._meta.fields:
-            if type(f) == ForeignKey:
-                print(f.related_model)
+    def _perform_unique_checks(self, unique_checks):
+        """
+        Overrides unique check behaviour with Firebase
+        """
+        errors = {}
+        for model_class, check in unique_checks:
+
+            # mapping between the field name to check for and the value of that field
+            field_values = {}
+            for field in check:
+                # get the actual field value
+                # if the field value is a model then get the id of that model
+                field_value = getattr(self, field)
+                if isinstance(field_value, FirebaseModel):
+                    field_value = field_value.id
+
+                field_values[field] = field_value
+
+            try:
+                self.__class__.objects.get(**field_values)
+                errors.setdefault('__all__', []).append(self.unique_error_message(model_class, check))
+            except self.DoesNotExist:
                 pass
+
+        return errors
 
     def save(self):
         """
@@ -139,7 +181,7 @@ class FirebaseModel(models.Model):
         :return: a Firebase model
         :rtype FirebaseModel
         """
-        collection = firestore.client().collection(self.collection_name)
+        collection = firestore.client().collection(self.get_collection_name())
 
         document = collection.document(document_id=self.generate_document_id())
 
