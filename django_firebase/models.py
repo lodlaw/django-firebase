@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import sql, ForeignKey
 from django.forms.models import model_to_dict
@@ -21,8 +22,8 @@ class FirebaseQuerySet(models.QuerySet):
     Overrides the default SQL queryset behaviour with Firebase
     """
 
-    def __init__(self, model=None, query=None, using=None, hints=None):
-        super().__init__(query=FirebaseQuery(model), model=model, using=None, hints=None)
+    def __init__(self, model=None, using=None, hints=None):
+        super().__init__(query=FirebaseQuery(model), model=model, using=using, hints=hints)
 
     def _clone(self):
         """
@@ -55,7 +56,7 @@ class FirebaseQuerySet(models.QuerySet):
         Fetches all documents of a collection and then appends to the result cache
         :return:
         """
-        documents = firestore.client().collection(self.model.collection_name)
+        documents = firestore.client().collection(self.model._collection_name)
 
         # get the order of the query
         for order in self.query.order_by:
@@ -107,8 +108,10 @@ class FirebaseModel(models.Model):
         super(FirebaseModel, self).__init__(*args, **kwargs)
 
         # validate if a collection name is provided
-        if not getattr(self, 'collection_name', None):
-            raise AttributeError("collection_name must be provided")
+        if not getattr(self, 'prod_collection_name', None):
+            raise AttributeError("prod_collection_name must be provided")
+        if not getattr(self, 'test_collection_name', None):
+            raise AttributeError("test_collection_name must be provided")
 
     def clean_fields(self, exclude=None):
         """
@@ -185,6 +188,14 @@ class FirebaseModel(models.Model):
                 document_data[map_to] = value
 
         return cls(id=document.id, **document_data)
+
+    @property
+    def _collection_name(self):
+        """ Gets the actual collection name based on if the app is running on debug or not """
+        if settings.DEBUG:
+            return self.test_collection_name
+
+        return self.prod_collection_name
 
     class Meta:
         abstract = True
