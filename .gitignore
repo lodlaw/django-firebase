@@ -28,6 +28,7 @@ media
 # Python #
 *.py[cod]
 *$py.class
+.DS_Store
 
 # Distribution / packaging
 .Python build/
