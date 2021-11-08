@@ -14,7 +14,7 @@ class FirebaseQuery(sql.Query):
         """
         Gets the number of documents in a collection
         """
-        return len(firestore.client().collection(self.model.collection_name).get())
+        return len(firestore.client().collection(self.model.get_collection_name()).get())
 
 
 class FirebaseQuerySet(models.QuerySet):
@@ -22,7 +22,7 @@ class FirebaseQuerySet(models.QuerySet):
     Overrides the default SQL queryset behaviour with Firebase
     """
 
-    def __init__(self, model=None, using=None, hints=None):
+    def __init__(self, model=None, using=None, hints=None, query=None):
         super().__init__(query=FirebaseQuery(model), model=model, using=using, hints=hints)
 
     def _clone(self):
@@ -56,7 +56,7 @@ class FirebaseQuerySet(models.QuerySet):
         Fetches all documents of a collection and then appends to the result cache
         :return:
         """
-        documents = firestore.client().collection(self.model._collection_name)
+        documents = firestore.client().collection(self.model.get_collection_name())
 
         # get the order of the query
         for order in self.query.order_by:
@@ -189,13 +189,13 @@ class FirebaseModel(models.Model):
 
         return cls(id=document.id, **document_data)
 
-    @property
-    def _collection_name(self):
+    @classmethod
+    def get_collection_name(cls):
         """ Gets the actual collection name based on if the app is running on debug or not """
         if settings.DEBUG:
-            return self.test_collection_name
+            return cls.test_collection_name
 
-        return self.prod_collection_name
+        return cls.prod_collection_name
 
     class Meta:
         abstract = True
