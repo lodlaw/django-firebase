@@ -14,6 +14,12 @@ A proxy for Firebase and Django model. With this package, you can:
 
 ### Supported Model Operations:
 - Model.objects.get()
+- Model.objects.filter()
+- Model.objects.exists()
+- Model.objects.count()
+- Model.objects.all()
+
+The filters can be applied to model are `==`. 
 
 ### Supported Fields:
 - All fields that are not relational.
