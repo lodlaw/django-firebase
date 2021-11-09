@@ -8,7 +8,10 @@ A proxy for Firebase and Django model. With this package, you can:
 - Nested data structure is currently not supported.
 
 ## What can be used
-### Admin page: listing all documents, creating a new document.
+### Admin page
+- Listing all documents.
+- Creating a new document.
+
 ### Supported Model Operations:
 - Model.objects.get()
 
