@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import sql, ForeignKey
+from django.db.models.lookups import Exact
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from firebase_admin import firestore
@@ -11,14 +12,46 @@ class FirebaseQuery(sql.Query):
     Overrides the default SQL query behaviour with Firebase
     """
 
-    def exists(self, using, limit=True):
-        return super().exists(using, limit)
-
     def get_count(self, using):
         """
         Gets the number of documents in a collection
         """
-        return len(firestore.client().collection(self.model.get_collection_name()).get())
+        return len(self.firebase_query.get())
+
+    def has_results(self, using):
+        return bool(self.get_count(using))
+
+    @property
+    def firebase_query(self):
+        collection_ref = self.collection_reference
+
+        for key, val in self.firebase_filters.items():
+            collection_ref = collection_ref.where(key, '==', val)
+
+        return collection_ref
+
+    @property
+    def firebase_filters(self):
+        """
+        Converts sql filters to firebase filters
+        :return: A dictionary contains key and values of the filter
+        """
+        # only get the exact filters
+        exact_filters = list(filter(lambda e: isinstance(e, Exact), self.where.children))
+
+        # transform the sql filters to firebase filter
+        filters = {}
+        for exact_filter in exact_filters:
+            filters[exact_filter.lhs.target.name] = exact_filter.rhs
+
+        return filters
+
+    @property
+    def collection_reference(self):
+        """
+        Gets the firebase collection reference
+        """
+        return firestore.client().collection(self.model.get_collection_name())
 
 
 class FirebaseQuerySet(models.QuerySet):
@@ -39,6 +72,9 @@ class FirebaseQuerySet(models.QuerySet):
         c.query = self.query
 
         return c
+
+    def exists(self):
+        return super().exists()
 
     def get(self, id=None, *args, **kwargs):
         """
@@ -74,7 +110,7 @@ class FirebaseQuerySet(models.QuerySet):
         Fetches all documents of a collection and then appends to the result cache
         :return:
         """
-        documents = firestore.client().collection(self.model.get_collection_name())
+        documents = self.query.firebase_query
 
         # get the order of the query
         for order in self.query.order_by:
