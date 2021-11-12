@@ -73,6 +73,9 @@ class FirebaseQuerySet(models.QuerySet):
 
         return c
 
+    def all(self):
+        return super().all()
+
     def exists(self):
         return super().exists()
 
