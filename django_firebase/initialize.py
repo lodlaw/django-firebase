@@ -17,7 +17,7 @@ def initialize():
         'private_key_id': os.environ[make_service_account_envar_name('PRIVATE_KEY_ID')],
         'private_key': os.environ[make_service_account_envar_name('PRIVATE_KEY')],
         'client_email': os.environ[make_service_account_envar_name('CLIENT_EMAIL')],
-        'client_id': os.environ[make_service_account_envar_name('CLIENT_ID')]
+        'client_id': os.environ[make_service_account_envar_name('CLIENT_ID')],
         'auth_uri': os.environ[make_service_account_envar_name('AUTH_URI')],
         'token_uri': os.environ[make_service_account_envar_name('TOKEN_URI')],
         'auth_provider_x509_cert_url': os.environ[make_service_account_envar_name('AUTH_PROVIDER_X509_CERT_URL')],
