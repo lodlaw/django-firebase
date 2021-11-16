@@ -2,7 +2,7 @@ import os
 
 import firebase_admin
 
-SERVICE_ACCOUNT_ENV_VAR_PREFIX = 'FIREBASE_SERVICE_ACCOUNT_'
+SERVICE_ACCOUNT_ENV_VAR_PREFIX = 'APP_FIREBASE_SERVICE_ACCOUNT_'
 
 
 def make_service_account_envar_name(name):
