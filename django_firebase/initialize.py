@@ -25,10 +25,13 @@ def initialize():
     }
 
     path = './cred.json'
-    with open(path, 'a') as f:
-        json.dump(config, f)
+    try:
+        with open(path, 'a') as f:
+            json.dump(config, f)
 
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = path
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = path
 
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app()
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app()
+    finally:
+        os.remove(path)
