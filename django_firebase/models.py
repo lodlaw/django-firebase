@@ -280,4 +280,3 @@ class FirebaseModel(models.Model):
 
     class Meta:
         abstract = True
-        managed = False
