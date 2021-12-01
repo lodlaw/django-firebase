@@ -62,6 +62,12 @@ class FirebaseQuerySet(models.QuerySet):
     def __init__(self, model=None, using=None, hints=None, query=None):
         super().__init__(query=FirebaseQuery(model), model=model, using=using, hints=hints)
 
+    def delete(self):
+        self._fetch_all()
+
+        for document in self._result_cache:
+            document.delete()
+
     def _clone(self):
         """
         Clones the queryset
@@ -213,6 +219,11 @@ class FirebaseModel(models.Model):
                 pass
 
         return errors
+
+    def delete(self, using=None, keep_parents=False):
+        collection = firestore.client().collection(self.get_collection_name())
+
+        document = collection.document(document_id=self.id)
 
     def save(self):
         """
