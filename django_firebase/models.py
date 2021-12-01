@@ -225,6 +225,8 @@ class FirebaseModel(models.Model):
 
         document = collection.document(document_id=self.id)
 
+        document.delete()
+
     def save(self):
         """
         Overrides the default behaviour of models.Model
