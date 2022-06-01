@@ -38,4 +38,9 @@ class FirebaseAuthProvider(AuthProvider):
 
     @classmethod
     def _create_firebase_login_token(cls, user):
-        return firebase_admin.auth.create_custom_token(uid=user.email).decode("utf-8")
+        try:
+            firebase_admin.auth.create_user(uid=str(user.uuid), email=user.email)
+        except:
+            firebase_admin._auth_utils.UidAlreadyExistsError
+
+        return firebase_admin.auth.create_custom_token(uid=str(user.uuid)).decode("utf-8")
