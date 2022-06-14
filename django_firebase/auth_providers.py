@@ -3,7 +3,7 @@ from firebase_admin.auth import UserNotFoundError
 
 
 class AuthProvider:
-    def forward(self, user):
+    def forward(self, user, custom_claims=None):
         """
         Signs in an user to an external system
         :param user: an user to provide auth for
@@ -14,7 +14,7 @@ class AuthProvider:
 
 
 class FirebaseAuthProvider(AuthProvider):
-    def forward(self, user):
+    def forward(self, user, custom_claims=None):
         """
         Signs in an user to an external system
         :param user: an user to provide auth for
@@ -23,7 +23,7 @@ class FirebaseAuthProvider(AuthProvider):
         """
         self._sign_out_firebase_user(user)
 
-        firebase_login_token = self._create_firebase_login_token(user)
+        firebase_login_token = self._create_firebase_login_token(user, custom_claims=custom_claims)
 
         return {
             'firebase_auth_token': firebase_login_token
@@ -37,10 +37,11 @@ class FirebaseAuthProvider(AuthProvider):
             pass
 
     @classmethod
-    def _create_firebase_login_token(cls, user):
+    def _create_firebase_login_token(cls, user, custom_claims=None):
         try:
             firebase_admin.auth.create_user(uid=str(user.uuid), email=user.email)
         except:
             firebase_admin._auth_utils.UidAlreadyExistsError
 
-        return firebase_admin.auth.create_custom_token(uid=str(user.uuid)).decode("utf-8")
+        return firebase_admin.auth.create_custom_token(uid=str(user.uuid), developer_claims=custom_claims).decode(
+            "utf-8")
