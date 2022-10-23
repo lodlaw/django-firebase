@@ -10,12 +10,16 @@ def make_service_account_envar_name(name):
 
 
 def initialize():
+    private_key = os.environ[make_service_account_envar_name('PRIVATE_KEY')]
+    if private_key[0] == '"' and private_key[-1] == '"':
+        private_key = private_key[1:-1]
+
     config = f"""
     {{
     "type": "{os.environ[make_service_account_envar_name('TYPE')]}",
         "project_id": "{os.environ[make_service_account_envar_name('PROJECT_ID')]}",
         "private_key_id": "{os.environ[make_service_account_envar_name('PRIVATE_KEY_ID')]}",
-        "private_key": "{os.environ[make_service_account_envar_name('PRIVATE_KEY')]}",
+        "private_key": "{private_key}",
         "client_email": "{os.environ[make_service_account_envar_name('CLIENT_EMAIL')]}",
         "client_id": "{os.environ[make_service_account_envar_name('CLIENT_ID')]}",
         "auth_uri": "{os.environ[make_service_account_envar_name('AUTH_URI')]}",
